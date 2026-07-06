@@ -99,6 +99,34 @@ inline void PlotEvent( TFile* fIn, const TString& outDir, ProgressBar& pb ){
         }
     }
 
+    // ---- centrality filter ----
+    {
+        TH1I* hcentr = ( TH1I* )fIn->Get( "hcentr" );
+        if( hcentr ){
+            TCanvas* c = new TCanvas( "event_centr", "", 800, 600 );
+            RealAspectRatio( c );
+            c->SetLeftMargin( 0.15 );
+            c->SetLogy();
+            hcentr->SetTitle( "" );
+            hcentr->GetXaxis()->SetTitle( "centrality" );
+            hcentr->GetYaxis()->SetTitle( "Events" );
+            hcentr->GetXaxis()->CenterTitle();
+            hcentr->GetYaxis()->CenterTitle();
+            hcentr->GetXaxis()->SetTitleOffset( 1.25 );
+            hcentr->SetLineColor( HiroshigeNightBlue() );
+            hcentr->SetFillColor( HiroshigeLightBlue() );
+            hcentr->SetFillStyle( 1001 );
+            hcentr->SetMinimum( 0.5 );
+            hcentr->SetMaximum( std::max( 1.0, hcentr->GetMaximum() ) * 10.0 );
+            hcentr->Draw( "hist" );
+            DrawCMSInternalHeader( 0.15, 0.90 );
+            DrawEntriesLabel( ( Long64_t )hcentr->GetEntries() );
+            SavePlot( c, outDir, "", "event", {}, "event_centrality" );
+            delete c;
+            pb.Update();
+        }
+    }
+
     // ---- HLT trigger ----
     {
         TH1I* htrig = ( TH1I* )fIn->Get( "h_hlt_j80" );

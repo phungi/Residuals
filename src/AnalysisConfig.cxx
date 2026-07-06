@@ -91,9 +91,14 @@ AnalysisConfig LoadAnalysisConfig( const std::string& path ){
     cfg.skimTreePath = TString( doc["trees"]["skim"].value_or( std::string{} ).c_str() );
     cfg.trigTreePath = TString( doc["trees"]["trigger"].value_or( std::string{} ).c_str() );
     cfg.filterBranch = TString( doc["trees"]["filter"].value_or( std::string{} ).c_str() );
+    // for( const auto& v : *doc["trees"]["filter"].as_array() )
+    //     cfg.cfg.filterBranch.push_back( TString( v.value_or( std::string{} ).c_str() ) );
 
     for( const auto& v : *doc["trees"]["jets"].as_array() )
         cfg.jetTreePaths.push_back( TString( v.value_or( std::string{} ).c_str() ) );
+
+    cfg.centrLower = doc["trigger"]["centrality_lower"].value_or( 0.0f );
+    cfg.centrHigher = doc["trigger"]["centrality_higher"].value_or( 0.0f );
 
     cfg.hltJ80Branch = TString( doc["trigger"]["branch"].value_or( std::string{} ).c_str() );
     cfg.hltJ80Thresh = doc["trigger"]["threshold"].value_or( 0.0f );

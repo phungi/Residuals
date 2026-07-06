@@ -58,20 +58,21 @@ struct JetStruct {
     std::vector<std::pair<TString, void*>> BranchMap( bool isMC ){
         std::vector<std::pair<TString, void*>> map = {
             { "nref", &reco.nref },
-            { "rawpt", reco.rawpt },
+            // { "rawpt", reco.rawpt },
+            { "jtptUncorrected", reco.rawpt },
             { "jtpt", reco.pt },
             { "jteta", reco.eta },
             { "jtphi", reco.phi },
-            { "jtPfCHF", reco.pf.CHF },
-            { "jtPfNHF", reco.pf.NHF },
-            { "jtPfCEF", reco.pf.CEF },
-            { "jtPfNEF", reco.pf.NEF },
-            { "jtPfMUF", reco.pf.MUF },
-            { "jtPfCHM", reco.pf.CHM },
-            { "jtPfNHM", reco.pf.NHM },
-            { "jtPfCEM", reco.pf.CEM },
-            { "jtPfNEM", reco.pf.NEM },
-            { "jtPfMUM", reco.pf.MUM },
+            // { "jtPfCHF", reco.pf.CHF },
+            // { "jtPfNHF", reco.pf.NHF },
+            // { "jtPfCEF", reco.pf.CEF },
+            // { "jtPfNEF", reco.pf.NEF },
+            // { "jtPfMUF", reco.pf.MUF },
+            // { "jtPfCHM", reco.pf.CHM },
+            // { "jtPfNHM", reco.pf.NHM },
+            // { "jtPfCEM", reco.pf.CEM },
+            // { "jtPfNEM", reco.pf.NEM },
+            // { "jtPfMUM", reco.pf.MUM },
         };
 
         // including gen and ref jet collections iff MC

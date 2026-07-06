@@ -8,7 +8,8 @@
 #include <utility>
 
 struct EventStruct {
-
+    // HFSum
+    Float_t hiHF_pf = 0.0f;
     // weight is 1 for data and is mapped to a branch for MC
     Float_t w = 1.0f;
     // vertex position
@@ -32,7 +33,8 @@ struct EventStruct {
         else {
             branches.insert( branches.end(), {
                 { "run", &run },
-                { "lumi", &lumi }
+                { "lumi", &lumi },
+                { "hiHF_pf", &hiHF_pf }
             } );
         }
         return branches;

@@ -21,9 +21,12 @@ struct AnalysisConfig {
     TString trigTreePath;
     std::vector<TString> jetTreePaths;
     TString filterBranch;
+    // std::vector<TString> filterBranch;
 
     TString hltJ80Branch;
     float hltJ80Thresh = 0.0f;
+    float centrLower = 0.0f;
+    float centrHigher = 0.0f;
 
     std::vector<TString> coneLabels;
     TString trigCone;
