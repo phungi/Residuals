@@ -2,6 +2,7 @@
 #define BRANCHMAPPING_H
 
 #include "TTree.h"
+#include "TChain.h"
 #include "TString.h"
 
 #include <stdexcept>
@@ -9,7 +10,7 @@
 #include <utility>
 
 // function to get branch variables from ttree
-void SetBranches( TTree* t, const std::vector<std::pair<TString, void*>>& branches ){
+void SetBranches( TChain* t, const std::vector<std::pair<TString, void*>>& branches ){
 
     // turning off all branches in ttree
     t->SetBranchStatus( "*", 0 );

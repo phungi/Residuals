@@ -44,8 +44,32 @@ Float_t findCentrality( Float_t HFSum ){
     return 0;
 }
 
-void runAsymmetry( TString input, TString output, TString modeFlag, Long64_t maxEvents ){
+std::vector<TString> input_files( TString input_file ){
+    std::vector<TString> output;
+    // if input is a root file, add it as the single element for the chain
+    if( input_file.Contains( ".root" ) ){
+        output.push_back( input_file );
+        return output;
+    }
+    // otherwise, open file and add each line
+    std::ifstream file( input_file );
+    if( !file ){
+        // return empty vector if no file
+        std::cout << "File not read!" << std::endl;
+        return output;
+    }
+    std::string str;
+    while( std::getline( file, str ) )
+    {
+        // if line is empty, skip
+        if( str.empty() ){ continue; }
+        output.push_back(str);
+    }
+    return output;
+}
 
+void runAsymmetry( TString input, TString output, TString modeFlag, Long64_t maxEvents ){
+    std::vector<TString> in_list = input_files( input );
     const AnalysisConfig& cfg = Config();
     PrintConfigSummary( cfg );
 
@@ -99,42 +123,54 @@ void runAsymmetry( TString input, TString output, TString modeFlag, Long64_t max
     FiltersStruct filters;
     Int_t hlt_j80 = 0;
 
-    // inpt
-    TFile* fi = TFile::Open( input, "read" );
-    if( !fi || fi->IsZombie() ){
-        std::cerr << "Cannot open " << input << "\n";
-        return;
-    }
+    // input
+    // TFile* fi = TFile::Open( input, "read" );
+    // if( !fi || fi->IsZombie() ){
+    //     std::cerr << "Cannot open " << input << "\n";
+    //     return;
+    // }
 
     // ttrees: jet collections, event info, filter, trigger
     const size_t kEvtIdx = nCones;
     const size_t kSkimIdx = nCones + 1;
     const size_t kTrigIdx = nCones + 2;
-    std::vector<TTree*> trees( nCones + 3, nullptr );
+    std::vector<TChain*> trees( nCones + 3, nullptr );
 
     for( size_t c = 0; c < nCones; c++ ){
-        trees[c] = ( TTree* )fi->Get( cfg.jetTreePaths[c] );
-        if( !trees[c] ){
-            std::cerr << "Missing jet tree " << cfg.jetTreePaths[c] << " in " << input << "\n";
-            return;
+        trees[c] = new TChain( cfg.jetTreePaths[c] );
+    }
+    trees[kEvtIdx] = new TChain( cfg.hiTreePath );
+    trees[kSkimIdx] = new TChain( cfg.skimTreePath );
+    trees[kTrigIdx] = new TChain( cfg.trigTreePath );
+
+    for( auto iter : in_list ){
+        for( size_t c = 0; c < trees.size(); c++ ){
+            TFile *cf = new TFile(iter, "READ");
+            TTree *check_tree = ( TTree* )cf->Get( trees[c]->GetName() );
+            if( !check_tree ){
+                std::cerr << "Missing jet tree " << trees[c]->GetName() << " in " << input << "\n";
+                return;
+            }
+            cf->Close();
+            trees[c]->Add(iter);
         }
     }
-    trees[kEvtIdx] = ( TTree* )fi->Get( cfg.hiTreePath );
-    if( !trees[kEvtIdx] ){ std::cerr << "Missing HiTree in " << input << "\n"; return; }
-    if( mode != RunMode::MC ){
-        trees[kSkimIdx] = ( TTree* )fi->Get( cfg.skimTreePath );
-        if( !trees[kSkimIdx] ){
-            std::cerr << "Missing skim tree in " << input << "\n(check cfg/2024ppRef.toml)\n";
-            return;
-        }
-    }
-    if( mode == RunMode::Triggered ){
-        trees[kTrigIdx] = ( TTree* )fi->Get( cfg.trigTreePath );
-        if( !trees[kTrigIdx] ){
-            std::cerr << "Missing HLT tree in " << input << "\n(check cfg/2024ppRef.toml)\n";
-            return;
-        }
-    }
+    // trees[kEvtIdx] = ( TTree* )fi->Get( cfg.hiTreePath );
+    // if( !trees[kEvtIdx] ){ std::cerr << "Missing HiTree in " << input << "\n"; return; }
+    // if( mode != RunMode::MC ){
+    //     trees[kSkimIdx] = ( TTree* )fi->Get( cfg.skimTreePath );
+    //     if( !trees[kSkimIdx] ){
+    //         std::cerr << "Missing skim tree in " << input << "\n(check cfg/2024ppRef.toml)\n";
+    //         return;
+    //     }
+    // }
+    // if( mode == RunMode::Triggered ){
+    //     trees[kTrigIdx] = ( TTree* )fi->Get( cfg.trigTreePath );
+    //     if( !trees[kTrigIdx] ){
+    //         std::cerr << "Missing HLT tree in " << input << "\n(check cfg/2024ppRef.toml)\n";
+    //         return;
+    //     }
+    // }
 
     // branch mapping
     const bool isMC = ( mode == RunMode::MC );
@@ -289,5 +325,5 @@ void runAsymmetry( TString input, TString output, TString modeFlag, Long64_t max
         fo->cd();
     }
     fo->Close();
-    fi->Close();
+    // fi->Close();
 }

@@ -97,7 +97,7 @@ AnalysisConfig LoadAnalysisConfig( const std::string& path ){
     for( const auto& v : *doc["trees"]["jets"].as_array() )
         cfg.jetTreePaths.push_back( TString( v.value_or( std::string{} ).c_str() ) );
 
-    cfg.centrLower = doc["trigger"]["centrality_lower"].value_or( 0.0f );
+    cfg.centrLower =  doc["trigger"]["centrality_lower"].value_or( 0.0f );
     cfg.centrHigher = doc["trigger"]["centrality_higher"].value_or( 0.0f );
 
     cfg.hltJ80Branch = TString( doc["trigger"]["branch"].value_or( std::string{} ).c_str() );

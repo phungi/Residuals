@@ -2,6 +2,9 @@
 build/
 lib/
 
+# submission files
+condor/submissions/
+
 # bin/ is SCRAM source; ignore only accidental local executables there.
 bin/*
 !bin/BuildFile.xml
@@ -11,6 +14,7 @@ bin/*
 *.root
 *.png
 *.pdf
+*.list 
 
 # closure/reprocessing inputs
 cfg/*clos*.toml

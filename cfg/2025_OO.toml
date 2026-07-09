@@ -9,10 +9,7 @@ golden_json = "data/json/Cert_Collisions2025OO_394153_394217_golden.json"
 # for that filelist without moving or renaming the file. The physical dataset
 # name (HP0, ZB0, ...) is free-form — only the mapped mode matters.
 [condor.filelist_modes]
-# filelist_HiForest_2024ppref_DATA_HP0 = "triggered"
-# filelist_HiForest_2024ppref_DATA_ZB0 = "non-triggered"
 # filelist_HiForest_2024ppref_MC = "mc"
-
 filelist_HiForest_2025OO_DATA_MB0 = "triggered"
 filelist_HiForest_2025OO_MC = "mc"
 
@@ -21,11 +18,7 @@ hi = "hiEvtAnalyzer/HiTree"
 skim = "skimanalysis/HltTree"
 trigger = "hltanalysis/HltTree"
 # Primary vertex filter branch, read from the skim tree (data only).
-filter = [
-    "pprimaryVertexFilter",
-    "pileupVertexFilter",
-    "OOpfCoincFilterPF2Th4"
-    ]
+filter = "pprimaryVertexFilter"
 jets = [
     # "ak2PFJetAnalyzer/t",
     # "ak3PFJetAnalyzer/t",
@@ -36,7 +29,7 @@ jets = [
 
 [trigger]
 branch = "HLT_OxyL1SingleJet20_v1"
-threshold = 0.0
+threshold = 1.0
 cone = "ak4PF"
 centrality_lower = 80.0
 centrality_higher = 90.0
