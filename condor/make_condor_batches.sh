@@ -305,8 +305,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/draw_bar.sh"
     CMSSW_SRC_ESCAPED="${CMSSW_SRC_ESCAPED//&/\\&}"
     sed "s|@CMSSW_SRC@|${CMSSW_SRC_ESCAPED}|g" "${CONDOR_DIR}/runtime_wrapper.sh" > runtime_wrapper.sh
     cp "${BINARY}"  runAsymmetry
-    # if [[ -n "${LIBRARY}" ]]; then cp "${LIBRARY}" libl2residuals.so; fi
-    cp ${REPO_ROOT}/build/lib/libl2residuals.so libl2residuals.so
+    if [[ -n "${LIBRARY}" ]]; then cp "${LIBRARY}" libl2residuals.so; fi
     # Only jec/veto/json are read by the worker (via [paths]/[jec] in
     # analysis_config.toml, resolved relative to this sandbox's data/) --
     # data/txt/ is read once here on the submit host to build the per-job
@@ -329,6 +328,8 @@ source "$(dirname "${BASH_SOURCE[0]}")/draw_bar.sh"
     TOTAL_LISTS=0
 
     for FILELIST_PATH in "${FILELISTS[@]}"; do
+
+        echo " Filelist_path ${FILELIST_PATH}" 
         BASENAME=$(basename "${FILELIST_PATH}" .txt)
 
         FILELIST_MODE="$(lookup_filelist_mode "${BASENAME}")"
@@ -401,7 +402,7 @@ EOF
             echo "  ${LABEL} (${MODE}): ${COUNT} jobs → $(pwd)/${SUBMIT_FILE}"
         else
             echo "  Submitting ${LABEL} (${MODE}): ${COUNT} jobs..."
-            condor_submit "${SUBMIT_FILE}"
+            # condor_submit "${SUBMIT_FILE}"
         fi
 
         TOTAL_JOBS=$((TOTAL_JOBS + COUNT))

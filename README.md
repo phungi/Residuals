@@ -479,3 +479,81 @@ The data files here are for the pp reference (5.36 TeV) collisions in 2024.
 ctest --test-dir build
 ```
 Tests exist for `FindLeadingJets` and `MakeDijet` logic, `FoldEtaAxis` correctness, `ConeHistograms`' MC response histogram plumbing/matching, `runTextFile` triggered/non-triggered merge selection and output format/η ordering for both text files, `runResponse`'s JES/JER extraction (Gaussian fit recovery, per-bin entry-count guard, corr/reco/raw variants vs-p<sub>T</sub><sup>gen</sup> binning), as well as build/library load checks.
+
+You can compile the code by 
+
+cmake -B build && cmake --build build
+
+or by calling 
+
+scram b -j12
+
+I don't think you need both, but I do both
+
+Step 1:
+Create the filelist of the dataset you want to process by using the make_filelist.py script (modify the path to the input dataset if it is located elsewhere). Use like:
+
+python3 condor/make_filelist.py OO_data_filtered /afs/cern.ch/user/v/vavladim/public/Residuals/CMSSW_15_0_11/src/Analysis/L2Residuals/data/txt/OO_data_filtered
+
+will create a folder in the /data/txt/ folder containing text files which divide the dataset in subsets of files, and a list of all the files will be created as OO_data_filtered.txt in that directory. This will serve as the input file for the condor jobs after (the name of the final txt file should be the same as the txt file listed (MC/triggered/non-triggered) in the .toml file)
+
+
+Step 2:
+
+Submission of the data/MC datasets to condor through commands like:
+
+bash condor/make_condor.sh -output /eos/cms/store/group/phys_heavyions/vavladim/condorOutputs/filtered_PostL2_inclusive_final -filelists data/txt/OO_data_filtered.txt -config cfg/2025_OO.toml
+
+listing the output folder, the above txt file and the configuration to be used
+
+
+Step 3:
+
+Combine the datasets:
+I use a simple command like the following, auto-completing the path of the condor output (dependent on the time of submission etc) e.g.: 
+
+hadd -j -f -k combined_filtered_PreL2.root /eos/cms/store/group/phys_heavyions/vavladim/condorOutputs/filtered_PostL2_inclusive_final/../../../*.root
+
+separately for MC and data
+
+Step 4:
+
+Creating the responses and the alpha distributions/fits by calling e.g.:
+
+./build/bin/runCalibration -data combined_filtered_PreL2.root -mc combined_MC.root -output Calibration_PreL2.root -config cfg/2025_OO.toml
+
+where the combined_* files are the hadd'ed files from the step above. The toml file serves as a way to change the fit parameters (some parameters are also available in the include/Binning.h file)
+
+Step 5:
+
+The creation of the text file to be used for the corrections, 
+
+./build/bin/runTextFile -triggered Calibration_PreL2.root -output textfile.root -prefix text_file -config cfg/2025_OO.toml
+
+this will create textfile.root file with the graphs, but also a text file in the data/jec/preliminary/ folder containing the text file for the corrections (the functions that are fit over the correction factors as a function of pt for each eta bin)
+
+
+Step 6:
+
+To see the effect of the correction, repeat Step 2 for data, but this time include the text_file derived above using the lines
+
+residual_files = [
+    [ "data/jec/preliminary/text_file.txt" ]
+]
+
+under the [jec] category
+
+Step 7:
+
+Repeat Steps 3 and 4 with the new combined dataset to extract the new responses
+
+
+Step 8:
+
+Each root file can be given as input to the plotting script like so:
+
+./build/bin/runPlotting -input Calibration_PreL2.root -outdir plots_Calibration_PreL2 -config cfg/2025_OO.toml 
+
+which will create appropriate plots that are saved at each step (in this case, the calibration step (step 4) will show plots for the response ratios between MC and data, the alpha distributions etc.)
+
+

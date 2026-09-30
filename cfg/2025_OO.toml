@@ -10,15 +10,22 @@ golden_json = "data/json/Cert_Collisions2025OO_394153_394217_golden.json"
 # name (HP0, ZB0, ...) is free-form — only the mapped mode matters.
 [condor.filelist_modes]
 # filelist_HiForest_2024ppref_MC = "mc"
-filelist_HiForest_2025OO_DATA_MB0 = "triggered"
-filelist_HiForest_2025OO_MC = "mc"
+OO_data_filtered = "triggered"
+OO_data_substructure_cut_1GeV = "non-triggered"
+OO_pythia_30k_nominal = "mc"
+# PYTHIA_HIJING_OO_MCEmbedded   = "mc"
+
 
 [trees]
 hi = "hiEvtAnalyzer/HiTree"
 skim = "skimanalysis/HltTree"
 trigger = "hltanalysis/HltTree"
 # Primary vertex filter branch, read from the skim tree (data only).
-filter = "pprimaryVertexFilter"
+filter = [
+    "pprimaryVertexFilter",
+    "OOphfCoincFilterPF2Th4",
+    "pileupVertexFilter"
+    ]
 jets = [
     # "ak2PFJetAnalyzer/t",
     # "ak3PFJetAnalyzer/t",
@@ -28,11 +35,14 @@ jets = [
 ]
 
 [trigger]
-branch = "HLT_OxyL1SingleJet20_v1"
-threshold = 1.0
+# put the lowest trigger in the end
+branch = [
+    "HLT_OxyL1SingleJet20_v1",
+    "HLT_MinimumBiasHF_OR_BptxAND_v1",
+]
+lowest_prescale = 1.2
+threshold = 1
 cone = "ak4PF"
-centrality_lower = 80.0
-centrality_higher = 90.0
 
 [jet_id]
 veto_map_histogram = "jetvetomap_all"
@@ -50,16 +60,90 @@ labels = [
 files = [
     # [ "data/jec/Prompt24HIpp_V1_MC_L2Relative_AK2PF.txt" ],
     # [ "data/jec/Prompt24HIpp_V1_MC_L2Relative_AK3PF.txt" ],
-    [ "data/jec/Prompt25HIOO_V1_MC_L2Relative_AK4PF.txt" ],
+    [ "data/jec/Prompt25HIOO_V1_MC_L2Relative_AK4PF.txt" ]
     # [ "data/jec/Prompt24HIpp_V1_MC_L2Relative_AK5PF.txt" ],
     # [ "data/jec/Prompt24HIpp_V1_MC_L2Relative_AK6PF.txt" ],
 ]
 
+# residual_files = [
+#     [ "data/jec/preliminary/120_200_ak4PF_eta_norm.txt" ]
+# ]
+# residual_files = [
+#     [ "data/jec/preliminary/fused_last_eta_ak4PF_abseta_norm.txt" ]
+# ]
+# residual_files = [
+#     [ "data/jec/preliminary/mean_avgs_ak4PF_abseta_norm.txt" ]
+# ]
+
+# bin average values, no merging of datasets
+# residual_files = [
+#     [ "data/jec/preliminary/mean_avg_noMerge_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+# bin centers, no merge (no changes)
+# residual_files = [
+#     [ "data/jec/preliminary/ptBinCenters_noMerge_ak4PF_abseta_norm.txt" ]
+# ]
+
+# residual_files = [
+#     [ "data/jec/preliminary/ptBinCenters_noMerge_7eff_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+# nominal centers of bins, merged at 60
+# residual_files = [
+#     [ "data/jec/preliminary/ptBinCenters_MERGED60_ak4PF_abseta_norm.txt" ]
+# ]
+
+# 60-90 data centrality
+# residual_files = [
+#     [ "data/jec/preliminary/60_90_centr_noMerge_avgpt_mean_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+# 60-90 data centrality 50 entries 
+# residual_files = [
+#     [ "data/jec/preliminary/60_90_centr_means_morept_50entries_ak4PF_abseta_norm.txt" ]
+# ]
+
+# residual_files = [
+#     [ "data/jec/preliminary/30_90_centr_50entries_ak4PF_abseta_norm.txt" ]
+# ]
+
+# residual_files = [
+#     [ "data/jec/preliminary/inclusive_centr_50entries_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+
+# residual_files = [
+#     [ "data/jec/preliminary/incl_centr_200_600_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+# residual_files = [
+#     [ "data/jec/preliminary/inclusive_resubmitted_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+# residual_files = [
+#     [ "data/jec/preliminary/3090_centrality_ak4PF_abseta_norm.txt" ]
+# ]
+
+
+
+residual_files = [
+    [ "data/jec/preliminary/inclusive_centrality_ak4PF_abseta_norm.txt" ]
+]
+
 [cuts]
+centrality_lower = 0.0
+centrality_higher = 100.0
 min_jet_pt = 10.0
 dphi = 2.7
 max_abs_a = 0.7
-min_entries_per_bin = 100
+min_entries_per_bin = 50
 residual_gaus_fit_half_width = 0.5
 residual_alpha_fit_hi = 0.31
 # Gaussian fit window for runResponse's JES/JER extraction: [1-x, 1+x] around
@@ -68,10 +152,16 @@ residual_alpha_fit_hi = 0.31
 response_gaus_fit_half_width = 0.3
 
 [binning]
-ptavg_edges = [ 30, 70, 100, 175, 250, 500, 1000 ]
+# ptavg_edges = [ 30, 70, 100, 175, 250, 500, 1000 ]
 
+
+
+# ptavg_edges = [ 40, 50, 60, 80, 120, 600 ]
+
+
+ptavg_edges = [ 40, 50, 60, 70, 90, 120, 200, 600 ]
 [step3]
-default_method = "gauss"
-# other options currently available: doubleGauss | trunc90 | trunc95
+default_method = "trunc95"
+# other options currently available: doubleGauss | trunc90 | trunc95 | gauss
 eta_mode = "both"
-# other options currently available: abseta | eta
+# other options currently available: abseta | eta | both

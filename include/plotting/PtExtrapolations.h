@@ -63,7 +63,14 @@ inline void PlotPtFit( TFile* fIn, const TString& outDir,
                 gc->GetYaxis()->SetTitle( "Correction factor" );
                 gc->GetXaxis()->CenterTitle();
                 gc->GetYaxis()->CenterTitle();
+                gc->SetMinimum(0.95);
+                gc->SetMaximum(1.1);
                 gc->SetTitle( "" );
+
+                TList* list =  gc->GetListOfFunctions();
+                TF1 *fn = gc->GetFunction( list->At(0)->GetName() );
+                Double_t chisq = fn->GetChisquare();
+                Int_t ndf = fn->GetNDF();
 
                 gc->Draw( "AP" );   // embedded fit function draws automatically
 
@@ -76,8 +83,18 @@ inline void PlotPtFit( TFile* fIn, const TString& outDir,
 
                 TLatex* tex = new TLatex();
                 tex->SetNDC(); tex->SetTextSize( 0.042 ); tex->SetTextFont( 62 );
-                tex->DrawLatex( 0.14, 0.92, Form( "%s  |  %s  |  %s  |  eta bin %d",
+                tex->DrawLatex( 0.14, 0.92, Form( "%s  |  %s  |  %s  |  #eta bin %d",
                     cone.Data(), kMethodLabels[m], etaMode.Data(), ie ) );
+
+                TLatex * tex_fit = new TLatex();
+                tex_fit->SetNDC(); tex_fit->SetTextSize( 0.042 ); tex_fit->SetTextFont( 62 );
+                tex_fit->DrawLatex( 0.5, 0.8, Form( "Run 2 fit: #chi^{2}/ndf = %0.2f/%d",
+                    chisq, ndf ) );
+
+                TLatex * tex_formula = new TLatex();
+                tex_formula->SetNDC(); tex_formula->SetTextSize( 0.038 ); tex_formula->SetTextFont( 62 );
+                TString s_formula = fn->GetExpFormula();
+                tex_formula->DrawLatex( 0.24, 0.8, s_formula );
 
                 SavePlot( c, outDir, cone, "ptfit", {etaMode, etaKey}, cvName );
                 pb.Update();

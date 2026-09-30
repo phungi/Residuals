@@ -19,7 +19,8 @@ bin/*
 # closure/reprocessing inputs
 cfg/*clos*.toml
 data/jec/preliminary/
-
+data/txt/PYTHIA_HIJING_OO_MCEmbedded/*
+data/txt/*
 # editor / OS
 *.swp
 .DS_Store

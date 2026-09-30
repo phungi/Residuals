@@ -34,10 +34,10 @@ public:
         loadVetoMap( VetoMapPath, HistName );
     }
 
-    bool JetSelection( Float_t jteta, Float_t jtphi, Float_t CHF, Float_t NHF, Float_t CEF, Float_t NEF, Float_t MUF, Float_t CHM, Float_t NHM, Float_t CEM, Float_t NEM, Float_t MUM ){
+    bool JetID( Float_t jteta, Float_t jtphi, Float_t CHF, Float_t NHF, Float_t CEF, Float_t NEF, Float_t MUF, Float_t CHM, Float_t NHM, Float_t CEM, Float_t NEM, Float_t MUM ){
 
-        bool KeepJet = false;
-        bool KeepJet_map = false;
+        // bool KeepJet = false;
+        // bool KeepJet_map = false;
         bool KeepJet_id = false;
 
         // multiplicity
@@ -54,10 +54,17 @@ public:
         if( ( ( TMath::Abs( jteta ) > 3.0 ) && ( TMath::Abs( jteta ) <= 5.0 ) ) && ( ( NHF > 0.2 ) && ( NEF < 0.9 ) && ( nm > 10 ) ) ){ KeepJet_id = true; }
 
         // jet veto map
+        // Double_t vetomapval = hvetomap_->GetBinContent( hvetomap_->FindBin( jteta, jtphi ) );
+        // if( vetomapval == 0 ){ KeepJet_map = true; }
+        // if( ( KeepJet_id == true ) && ( KeepJet_map == true ) ){ KeepJet = true; }
+        return KeepJet_id;
+    }
+
+    bool JetVeto( Float_t jteta, Float_t jtphi ){
+        bool KeepJet_map = false;
         Double_t vetomapval = hvetomap_->GetBinContent( hvetomap_->FindBin( jteta, jtphi ) );
         if( vetomapval == 0 ){ KeepJet_map = true; }
-        if( ( KeepJet_id == true ) && ( KeepJet_map == true ) ){ KeepJet = true; }
-        return KeepJet;
+        return KeepJet_map;
     }
 };
 

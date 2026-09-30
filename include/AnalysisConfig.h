@@ -19,11 +19,12 @@ struct AnalysisConfig {
     TString hiTreePath;
     TString skimTreePath;
     TString trigTreePath;
+    int trigLowestPrescale;
     std::vector<TString> jetTreePaths;
-    TString filterBranch;
-    // std::vector<TString> filterBranch;
+    // TString filterBranch;
+    std::vector<TString> filterBranches;
 
-    TString hltJ80Branch;
+    std::vector<TString> hltTriggerBranches;
     float hltJ80Thresh = 0.0f;
     float centrLower = 0.0f;
     float centrHigher = 0.0f;

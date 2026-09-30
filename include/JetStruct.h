@@ -31,12 +31,24 @@ struct JetStruct {
             Float_t CEF[MAXNREF];
             Float_t NEF[MAXNREF];
             Float_t MUF[MAXNREF];
+
+            Float_t photonSum[MAXNREF];
+            Float_t chargedSum[MAXNREF];
+            Float_t eSum[MAXNREF];
+            Float_t neutralSum[MAXNREF];
+            Float_t muSum[MAXNREF];
             // PF multiplicities
             Int_t CHM[MAXNREF];
             Int_t NHM[MAXNREF];
             Int_t CEM[MAXNREF];
             Int_t NEM[MAXNREF];
             Int_t MUM[MAXNREF];
+
+            // Int_t chargedHadN[MAXNREF];
+            // Int_t photonN[MAXNREF];
+            // Int_t elN[MAXNREF];
+            // Int_t neutralN[MAXNREF];
+            // Int_t muN[MAXNREF];
         } pf;
     } reco;
 
@@ -58,11 +70,29 @@ struct JetStruct {
     std::vector<std::pair<TString, void*>> BranchMap( bool isMC ){
         std::vector<std::pair<TString, void*>> map = {
             { "nref", &reco.nref },
-            // { "rawpt", reco.rawpt },
             { "jtptUncorrected", reco.rawpt },
+            // the below code replaces the bit above in case we are processing the datasets which contain a different convention for the jetID variables,
+            // see also the RunAsymmetry.cxx for the appropriate branches 
+            // { "rawpt", reco.rawpt },
             { "jtpt", reco.pt },
             { "jteta", reco.eta },
             { "jtphi", reco.phi },
+
+            { "chargedN", reco.pf.CHM },
+            { "neutralN", reco.pf.NHM },
+            { "eN", reco.pf.CEM },
+            { "photonN", reco.pf.NEM },
+            { "muN", reco.pf.MUM },
+            {"photonSum", &reco.pf.photonSum},
+            {"chargedSum", &reco.pf.chargedSum},
+            {"neutralSum", &reco.pf.neutralSum},
+            {"eSum", &reco.pf.eSum},
+            {"muSum", &reco.pf.muSum}
+
+
+            // the below code replaces the bit above in case we are processing the datasets which contain a different convention for the jetID variables,
+            // see also the RunAsymmetry.cxx for the appropriate branches 
+
             // { "jtPfCHF", reco.pf.CHF },
             // { "jtPfNHF", reco.pf.NHF },
             // { "jtPfCEF", reco.pf.CEF },
@@ -81,9 +111,9 @@ struct JetStruct {
                 { "refpt", ref.pt },
                 { "refeta", ref.eta },
                 { "refphi", ref.phi },
-                { "genpt", gen.pt },
-                { "geneta", gen.eta },
-                { "genphi", gen.phi },
+                // { "genpt", gen.pt },
+                // { "geneta", gen.eta },
+                // { "genphi", gen.phi },
             } );
         }
         return map;

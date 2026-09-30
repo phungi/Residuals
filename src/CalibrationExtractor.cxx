@@ -268,14 +268,16 @@ static ExtrapResult FitAndExtrapolate(
     // ---- normalized variant: divide each point by the value at the high end of the fit range,
     //      fit, then multiply the intercept back. Errors differ from direct
     //      method because the normalization changes the fit input distribution. ----
-    double normVal = 0, normErr = 0;
+    double normVal = 0, normErr = 0, normAlpha = 0;
     for( int k = n - 1; k >= 0; k-- ){
         if( pts[k].alpha <= controls.alphaFitHi + 1e-4 && pts[k].val > 1e-6 ){
             normVal = pts[k].val;
             normErr = pts[k].err;
+            normAlpha = pts[k].alpha;
             break;
         }
     }
+    std::cout << "Selected normalisation point is at #alpha=" << normAlpha << std::endl;
     if( normVal > 1e-6 ){
         int nfit = 0;
         for( int k = 0; k < n && pts[k].alpha <= controls.alphaFitHi + 1e-4; k++ ) nfit++;
@@ -286,9 +288,14 @@ static ExtrapResult FitAndExtrapolate(
             if( std::abs( pts[k].val ) < 1e-6 ){ bad = true; break; }
             xn[k] = pts[k].alpha;
             yn[k] = pts[k].val / normVal;
+            // eyn[k] = yn[k] * TMath::Sqrt(
+            //     TMath::Power( pts[k].err / pts[k].val, 2.0 ) +
+            //     TMath::Power( normErr / normVal, 2.0 ) );
+            yn[k] = pts[k].val / normVal;
             eyn[k] = yn[k] * TMath::Sqrt(
                 TMath::Power( pts[k].err / pts[k].val, 2.0 ) +
-                TMath::Power( normErr / normVal, 2.0 ) );
+                TMath::Power( normErr / normVal, 2.0 ) 
+                );
         }
         if( !bad && nfit >= 2 ){
             TString gnorm = gname + "_norm";
@@ -306,12 +313,19 @@ static ExtrapResult FitAndExtrapolate(
 
             const double c0n = fn->GetParameter( 0 );
             const double ec0n = fn->GetParError( 0 );
+            // c0n above is the intercept of the normalised response values for different alphas
+            // checking without the intercept correction
             out.c0n = c0n * normVal;
             out.ec0n = ( std::abs( c0n ) > 1e-9 )
                 ? out.c0n * TMath::Sqrt(
                     TMath::Power( ec0n / c0n, 2.0 ) +
-                    TMath::Power( normErr / normVal, 2.0 ) )
+                    TMath::Power( normErr / normVal, 2.0 )
+                    )
                 : ec0n * normVal;
+            
+
+            // out.c0n = normVal;
+            // out.ec0n = normErr;
             out.normValid = true;
 
             dGraphs->cd();
@@ -422,7 +436,7 @@ static void ExtractAndFit(
 
     for( int ipt = 0; ipt < nPt; ipt++ ){
         const auto& ptSlice = bins.ptavgSlices[ipt];
-
+        std::cout << ptSlice.lo << " - " << ptSlice.hi << " pt slice\n";
         for( int ialpha = 0; ialpha < nAlpha; ialpha++ ){
             const auto& aSlice = bins.alphaSlices[ialpha];
 
@@ -497,6 +511,7 @@ static void ExtractAndFit(
                     }
                     if( outsideConfiguredRange ) return;
                     double Rd = ToR( Ad ), Rm = ToR( Am );
+                    // std::cout << " Calculated R: data= " << Rd << ", MC=" << Rm << std::endl;
                     double eRd = ToRErr( Ad, eAd ), eRm = ToRErr( Am, eAm );
                     if( std::abs( Rd ) < 1e-6 ) return;
                     double ratio = Rm / Rd;
@@ -667,6 +682,8 @@ void runCalibration( TString dataFile, TString mcFile, TString outputFile ){
         THnSparse* hMC = FoldEtaAxis( hRawMC, kEtaAxis, cone + "_asym_mc_abseta" );
 
         TDirectory* coneDir = fOut->mkdir( cone.Data() );
+
+
         coneDir->cd();
         hData->Write();
         hMC->Write();
@@ -689,6 +706,14 @@ void runCalibration( TString dataFile, TString mcFile, TString outputFile ){
 
         delete hData;
         delete hMC;
+    }
+
+    for(size_t i{1}; i < cfg.ptavgEdges.size(); ++i ){
+        TH1D* a = (TH1D*)fData->Get(Form("h_dijet_avgpt_%.f_%.f", cfg.ptavgEdges.at(i-1), cfg.ptavgEdges.at(i)));
+        if(a){TH1D *copy = (TH1D*)a->Clone(Form("copy_h_dijet_avgpt_%.f_%.f", cfg.ptavgEdges.at(i-1), cfg.ptavgEdges.at(i)));
+        fOut->cd();
+        copy->Write();
+        }
     }
 
     pb.Finish();

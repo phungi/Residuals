@@ -81,7 +81,6 @@ AnalysisConfig LoadAnalysisConfig( const std::string& path ){
     AnalysisConfig cfg;
     cfg.configPath = configPath;
     cfg.repoRoot = repoRoot;
-
     cfg.vetoMapPath  = ResolvePath( doc["paths"]["veto_map"].value_or( std::string{} ), repoRoot );
     cfg.jsonPath     = ResolvePath( TString( doc["paths"]["golden_json"].value_or( std::string{} ).c_str() ), repoRoot );
 
@@ -89,18 +88,21 @@ AnalysisConfig LoadAnalysisConfig( const std::string& path ){
 
     cfg.hiTreePath   = TString( doc["trees"]["hi"].value_or( std::string{} ).c_str() );
     cfg.skimTreePath = TString( doc["trees"]["skim"].value_or( std::string{} ).c_str() );
-    cfg.trigTreePath = TString( doc["trees"]["trigger"].value_or( std::string{} ).c_str() );
-    cfg.filterBranch = TString( doc["trees"]["filter"].value_or( std::string{} ).c_str() );
-    // for( const auto& v : *doc["trees"]["filter"].as_array() )
-    //     cfg.cfg.filterBranch.push_back( TString( v.value_or( std::string{} ).c_str() ) );
-
     for( const auto& v : *doc["trees"]["jets"].as_array() )
         cfg.jetTreePaths.push_back( TString( v.value_or( std::string{} ).c_str() ) );
 
-    cfg.centrLower =  doc["trigger"]["centrality_lower"].value_or( 0.0f );
-    cfg.centrHigher = doc["trigger"]["centrality_higher"].value_or( 0.0f );
+    cfg.trigTreePath = TString( doc["trees"]["trigger"].value_or( std::string{} ).c_str() );
+    // cfg.filterBranch = TString( doc["trees"]["filter"].value_or( std::string{} ).c_str() );
 
-    cfg.hltJ80Branch = TString( doc["trigger"]["branch"].value_or( std::string{} ).c_str() );
+    std::cout << "Loading filters:\n";
+    for( const auto& v : *doc["trees"]["filter"].as_array() ){
+        std::cout << v.value_or("nothing") << std::endl;
+        cfg.filterBranches.push_back( TString( v.value_or( std::string{} ).c_str() ) );
+    }
+
+    for( const auto& v : *doc["trigger"]["branch"].as_array() )
+        cfg.hltTriggerBranches.push_back( TString( v.value_or( std::string{} ).c_str() ) );
+    cfg.trigLowestPrescale = doc["trigger"]["lowest_prescale"].value_or( 1. ) ;
     cfg.hltJ80Thresh = doc["trigger"]["threshold"].value_or( 0.0f );
     cfg.trigCone     = TString( doc["trigger"]["cone"].value_or( std::string{} ).c_str() );
 
@@ -131,6 +133,8 @@ AnalysisConfig LoadAnalysisConfig( const std::string& path ){
     // min_jet_pt is a single global floor used both for the Step 1 inclusive-
     // jet histogram and as the dijet subleading-jet validity cut — the third
     // jet's pT (used for alpha) is deliberately NOT subject to this.
+    cfg.centrLower =  doc["cuts"]["centrality_lower"].value_or( 0.0f );
+    cfg.centrHigher = doc["cuts"]["centrality_higher"].value_or( 100.0f );
     cfg.minJetPt        = doc["cuts"]["min_jet_pt"].value_or( 0.0f );
     cfg.dphiCut         = doc["cuts"]["dphi"].value_or( 0.0f );
     cfg.maxAbsA         = doc["cuts"]["max_abs_a"].value_or( 0.0f );

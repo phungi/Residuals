@@ -53,6 +53,27 @@ static double SliceCenter( const RangeBin& sl ){
     return 0.5 * ( sl.lo + sl.hi );
 }
 
+static std::vector<double> SliceMeanAndError( const RangeBin& sl, std::vector<TH1D*> hists ){
+    std::vector<double> result = {};
+    std::cout << "Size of hist " << hists.size() << std::endl;
+    for( size_t i{0}; i < hists.size(); ++i ){
+
+        std::cout << " loop count " << std::endl;
+        TString hist_name = hists.at(i)->GetName();
+        std::cout << " inside " << hist_name << std::endl;
+        TString check = Form( "avgpt_%.f_%.f", sl.lo, sl.hi );
+        std::cout << "checking for " << check << " inside " << hist_name << std::endl;
+        if( hist_name.Contains( check ) ){
+             result = { hists.at(i)->GetMean(), hists.at(i)->GetMeanError() };
+             return result;
+        }
+    }
+    if( result.size() == 0 ){
+        std::cout << "Did not find the histogram containing the bounds " << sl.lo << " and " << sl.hi << std::endl;
+    }
+    return result;
+}
+
 // Fetch an intercept histogram from the current cone TDirectory layout.
 static TH1D* FetchIntercept( TFile* f, const TString& cone, const TString& name ){
     TDirectory* coneDir = ( TDirectory* )f->Get( cone );
@@ -65,6 +86,81 @@ static TH1D* FetchIntercept( TFile* f, const TString& cone, const TString& name 
 // fit; never re-fit the same points twice elsewhere.
 static FitResult FitPtSlices(
     const std::vector<double>& ptCenters,
+    const std::vector<double>& corr,
+    const std::vector<double>& corrErr,
+    const TString& graphName,
+    TDirectory* dGraphs ){
+    FitResult r;
+    int n = ( int )ptCenters.size();
+    if( n < kMinSlices ) return r;
+
+    std::vector<double> ex( n, 0.0 );
+    TGraphErrors* gr = new TGraphErrors( n,
+        ptCenters.data(), corr.data(), ex.data(), corrErr.data() );
+    gr->SetName( graphName );
+    gr->SetTitle( ";p_{T,avg} [GeV];Correction factor" );
+
+    TF1* f = new TF1( graphName + "_fit", FitFunc, kPtLo, kPtHi, kNPar );
+    // Start at the unity correction (1/(1+0+0)=1) — physically close for all eta.
+    // Starting at (1.5,1.5,1.5) gives a negative denominator at low pT.
+    f->SetParameter( 0, 1.0 );
+    f->SetParameter( 1, 0.0 );
+    f->SetParameter( 2, 0.0 );
+
+    // No "N": the fit function is embedded in the graph so runPlotting can draw it later.
+    TFitResultPtr res = gr->Fit( f, "QSR" );
+    if( res.Get() && res->IsValid() ){
+        for( int p = 0; p < kNPar; p++ ) r.p[p] = res->Parameter( p );
+        r.valid = true;
+    }
+
+    if( dGraphs ){ dGraphs->cd(); gr->Write(); }
+    delete f;    // clone embedded in gr's function list is separately owned
+    delete gr;
+    return r;
+}
+
+static FitResult FitPtSlices(
+    const std::vector<double>& ptMeans,
+    const std::vector<double>& ptMeanErrors,
+    const std::vector<double>& corr,
+    const std::vector<double>& corrErr,
+    const TString& graphName,
+    TDirectory* dGraphs ){
+    FitResult r;
+    int n = ( int )ptMeans.size();
+    if( n < kMinSlices ) return r;
+
+    std::vector<double> ex( n, 0.0 );
+    TGraphErrors* gr = new TGraphErrors( n,
+        ptMeans.data(), corr.data(), ptMeanErrors.data(), corrErr.data() );
+    gr->SetName( graphName );
+    gr->SetTitle( ";p_{T,avg} [GeV];Correction factor" );
+
+    TF1* f = new TF1( graphName + "_fit", FitFunc, kPtLo, kPtHi, kNPar );
+    // Start at the unity correction (1/(1+0+0)=1) — physically close for all eta.
+    // Starting at (1.5,1.5,1.5) gives a negative denominator at low pT.
+    f->SetParameter( 0, 1.0 );
+    f->SetParameter( 1, 0.0 );
+    f->SetParameter( 2, 0.0 );
+
+    // No "N": the fit function is embedded in the graph so runPlotting can draw it later.
+    TFitResultPtr res = gr->Fit( f, "QSR" );
+    if( res.Get() && res->IsValid() ){
+        for( int p = 0; p < kNPar; p++ ) r.p[p] = res->Parameter( p );
+        r.valid = true;
+    }
+
+    if( dGraphs ){ dGraphs->cd(); gr->Write(); }
+    delete f;    // clone embedded in gr's function list is separately owned
+    delete gr;
+    return r;
+}
+// Build graph with centres of bins at bin mean instead of centre 
+
+static FitResult FitPtSlices(
+    const std::vector<double>& ptCenters,
+    std::vector<TH1D*>& DijetAvgPtHists,
     const std::vector<double>& corr,
     const std::vector<double>& corrErr,
     const TString& graphName,
@@ -166,6 +262,9 @@ static void RunTextFileImpl(
     TString outputRootFile, TString outputTextPrefix,
     TString method, bool useNorm ){
 
+    const AnalysisConfig& cfg = Config();
+    PrintConfigSummary( cfg );
+
     if( outputTextPrefix.IsNull() ) outputTextPrefix = kDefaultTextPrefix;
     if( outputTextPrefix.Contains( "/" ) ){
         std::cerr << "ERROR: PREFIX must be a plain name, not a path (it contains '/'): "
@@ -173,10 +272,28 @@ static void RunTextFileImpl(
         return;
     }
 
+    //combine the pt average slice distributions from both files to extract mean within each
+    std::vector<TH1D*> intraAvgPtBinDist = {};
+    for(size_t i{1}; i < cfg.ptavgEdges.size(); ++i ){
+        TH1D *a;
+        // TH1D *b;
+        // std::cout << "Try to get " << Form("copy_h_dijet_avgpt_%.f_%.f", cfg.ptavgEdges.at(i-1), cfg.ptavgEdges.at(i)) << std::endl;
+        if(fTrig) a = (TH1D*)fTrig->Get(Form("copy_h_dijet_avgpt_%.f_%.f", cfg.ptavgEdges.at(i-1), cfg.ptavgEdges.at(i)));
+        // std::cout << "adding " << a->GetName() << std::endl;
+        // if(fNoTrig) b = (TH1D*)fNoTrig->Get(Form("copy_h_dijet_avgpt_%.f_%.f", cfg.ptavgEdges.at(i-1), cfg.ptavgEdges.at(i)));
+        // // std::cout << "adding " << b->GetName() << std::endl;
+        // if( a and b ){
+        //     a->Add(b);
+        // }
+        intraAvgPtBinDist.push_back(a);
+        // std::cout << "adding " << a->GetName() << std::endl;
+    }
+
+
     const TString suffix = useNorm ? "_norm" : "";
 
-    const AnalysisConfig& cfg = Config();
-    PrintConfigSummary( cfg );
+    // const AnalysisConfig& cfg = Config();
+    // PrintConfigSummary( cfg );
 
     // Correction text files always land here, not wherever the caller points
     // OUTPUT= — see TextFileWriter.h. Gitignored; created if missing.
@@ -249,6 +366,7 @@ static void RunTextFileImpl(
                 if( src ){
                     TString name = L2Name::ObjectName( cone, "intercept",
                         {etaMode, L2Name::PtKey( ptSlice )}, {method} ) + suffix;
+                    std::cout << "Fetch the intercept histograms from file " << src->GetName() << " / " << cone << " / " << name << std::endl;
                     hSlice[ip] = FetchIntercept( src, cone, name );
                 }
                 if( !hSlice[ip] ){ nMissingSlices++; }
@@ -282,19 +400,22 @@ static void RunTextFileImpl(
             fits.assign( nEta, FitResult{} );
             int nUnityFallback = 0;
             for( int ieta = 0; ieta < nEta; ieta++ ){
-                std::vector<double> ptX, corr, corrErr;
+                std::vector<double> ptX, ptXerr, corr, corrErr;
                 for( int ip = 0; ip < nPt; ip++ ){
                     if( !hSlice[ip] ) continue;
                     double v = hSlice[ip]->GetBinContent( ieta + 1 );
                     double e = hSlice[ip]->GetBinError( ieta + 1 );
                     if( v == 0.0 && e == 0.0 ) continue;
-                    ptX.push_back( SliceCenter( bins.ptavgSlices[ip] ) );
+                    // ptX.push_back( SliceCenter( bins.ptavgSlices[ip] ) );
+                    ptX.push_back( SliceMeanAndError( bins.ptavgSlices[ip], intraAvgPtBinDist ).at(0) );
+                    ptXerr.push_back( SliceMeanAndError( bins.ptavgSlices[ip], intraAvgPtBinDist ).at(1) );
                     corr.push_back( v );
                     corrErr.push_back( e > 0.0 ? e : 1e-4 );
                 }
                 TString graphName = L2Name::ObjectName( cone, "ptcorr",
                     {etaMode, L2Name::EtaKey( ieta, fullEta )}, {method} ) + suffix;
-                fits[ieta] = FitPtSlices( ptX, corr, corrErr, graphName, dGraphs );
+                // fits[ieta] = FitPtSlices( ptX, corr, corrErr, graphName, dGraphs );
+                fits[ieta] = FitPtSlices( ptX, ptXerr, corr, corrErr, graphName, dGraphs );
                 if( !fits[ieta].valid ){ nUnityFallback++; }
             }
             if( nUnityFallback > 0 ){

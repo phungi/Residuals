@@ -18,14 +18,14 @@ OUTPUT="$3"
 MODE="$4"
 START_DIR="$(pwd)"
 
-CMSSW_SRC="@CMSSW_SRC@"
+CMSSW_SRC="/afs/cern.ch/user/v/vavladim/public/Residuals/CMSSW_15_0_11/src/"
 
-if [[ -z "${CMSSW_SRC}" || "${CMSSW_SRC}" == "@CMSSW_SRC@" ]]; then
-    echo "ERROR: CMSSW_SRC was not stamped into runtime_wrapper.sh by make_condor.sh" >&2
-    exit 1
-fi
+# if [[ -z "${CMSSW_SRC}" || "${CMSSW_SRC}" == "@CMSSW_SRC@" ]]; then
+#     echo "ERROR: CMSSW_SRC was not stamped into runtime_wrapper.sh by make_condor.sh" >&2
+#     exit 1
+# fi
 
-echo "CMSSW environment: $(basename "$(dirname "${CMSSW_SRC}")")"
+# echo "CMSSW environment: $(basename "$(dirname "${CMSSW_SRC}")")"
 source /cvmfs/cms.cern.ch/cmsset_default.sh
 cd "${CMSSW_SRC}"
 eval "$(scramv1 runtime -sh)"
