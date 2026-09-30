@@ -480,6 +480,10 @@ ctest --test-dir build
 ```
 Tests exist for `FindLeadingJets` and `MakeDijet` logic, `FoldEtaAxis` correctness, `ConeHistograms`' MC response histogram plumbing/matching, `runTextFile` triggered/non-triggered merge selection and output format/η ordering for both text files, `runResponse`'s JES/JER extraction (Gaussian fit recovery, per-bin entry-count guard, corr/reco/raw variants vs-p<sub>T</sub><sup>gen</sup> binning), as well as build/library load checks.
 
+
+
+<h2> Quick instructions </h2>
+
 You can compile the code by 
 
 cmake -B build && cmake --build build
